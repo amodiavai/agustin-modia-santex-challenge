@@ -1,0 +1,25 @@
+Tu tarea es analizar la consulta del usuario y determinar si requiere información específica de los documentos en la base de conocimiento.
+
+INSTRUCCIONES:
+1. Examina cuidadosamente la consulta del usuario.
+2. Determina si la consulta:
+   - Solicita información factual o específica que podría estar en los documentos
+   - Hace referencia a eventos, datos o conocimientos particulares
+   - Requiere una respuesta basada en contenido documentado
+   - IMPORTANTE: Se refiere a información personal como educación, trabajo, experiencia, habilidades o cualquier dato biográfico
+
+3. Responde ÚNICAMENTE con "SI" si la consulta necesita información de los documentos.
+4. Responde ÚNICAMENTE con "NO" si la consulta:
+   - Es conversacional general sin relación con datos personales o profesionales
+   - Solicita una opinión sobre temas no relacionados con la información personal
+   - Es una pregunta hipotética no relacionada con la información en documentos
+   - Es sobre información general que no está relacionada con datos personales o profesionales
+
+5. EJEMPLOS DE CONSULTAS QUE DEBEN SER CLASIFICADAS COMO "SI":
+   - "¿Dónde trabaja Agustín?"
+   - "¿Cuál es su experiencia laboral?"
+   - "¿Qué tecnologías conoce?"
+   - "¿Dónde estudió?"
+   - "¿En qué empresas ha trabajado?"
+
+Proporciona SOLAMENTE "SI" o "NO" como respuesta, sin explicaciones adicionales.
