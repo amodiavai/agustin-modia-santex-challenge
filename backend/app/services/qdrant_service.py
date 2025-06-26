@@ -15,15 +15,27 @@ class QdrantService:
         self.collection_name = os.getenv("COLLECTION_NAME", "gemelo_agustin_large")
         self.vector_size = 3072  # Dimensión del modelo text-embedding-3-large
         
-        # Configuración para Railway o Docker
+        # Configuración para Railway, Docker y servicios externos
         qdrant_url = os.getenv("QDRANT_URL")
+        qdrant_private_url = os.getenv("QDRANT_PRIVATE_URL")  # Railway internal URL
+        
+        # Prioridad: URL externa > URL privada Railway > host:port tradicional
         if qdrant_url:
-            # Usar URL completa (para Railway o servicios externos)
+            # Usar URL completa (para Qdrant Cloud o URLs externas)
             try:
-                self.client = QdrantClient(url=qdrant_url, api_key=os.getenv("QDRANT_API_KEY"))
-                logger.info(f"Conexión exitosa a Qdrant usando URL: {qdrant_url}")
+                api_key = os.getenv("QDRANT_API_KEY")
+                self.client = QdrantClient(url=qdrant_url, api_key=api_key)
+                logger.info(f"Conexión exitosa a Qdrant usando URL externa: {qdrant_url}")
             except Exception as e:
-                logger.error(f"Error conectando a Qdrant con URL: {str(e)}")
+                logger.error(f"Error conectando a Qdrant con URL externa: {str(e)}")
+                raise
+        elif qdrant_private_url:
+            # Usar URL privada de Railway (comunicación interna entre servicios)
+            try:
+                self.client = QdrantClient(url=qdrant_private_url)
+                logger.info(f"Conexión exitosa a Qdrant usando URL privada Railway: {qdrant_private_url}")
+            except Exception as e:
+                logger.error(f"Error conectando a Qdrant con URL privada Railway: {str(e)}")
                 raise
         else:
             # Configuración tradicional host:port (para Docker local)

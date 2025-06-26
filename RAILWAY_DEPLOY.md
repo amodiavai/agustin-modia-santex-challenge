@@ -6,9 +6,19 @@
 2. **Qdrant Cloud** (Recomendado): [cloud.qdrant.io](https://cloud.qdrant.io)
 3. **OpenAI API Key**: [platform.openai.com](https://platform.openai.com)
 
-## 🔧 Configuración de Servicios Externos
+## 🔧 Configuración de Servicios
 
-### 1. Configurar Qdrant Cloud
+### Opción 1: Qdrant en Railway (Recomendado)
+
+```bash
+1. En Railway: New Project → Deploy Template
+2. Busca "Qdrant" y deploy el template
+3. Anota el nombre del servicio (ej: "qdrant")
+4. En tu aplicación, configura:
+   QDRANT_PRIVATE_URL=http://qdrant.railway.internal:6333
+```
+
+### Opción 2: Qdrant Cloud (Alternativo)
 
 ```bash
 1. Ve a https://cloud.qdrant.io/
@@ -17,6 +27,7 @@
 4. Anota:
    - URL del cluster: https://xxxxxx.europe-west3-0.gcp.cloud.qdrant.io:6333
    - API Key: qdrant_xxxxxxxxx
+   - Configura: QDRANT_URL y QDRANT_API_KEY
 ```
 
 ### 2. Configurar OpenAI API
@@ -69,11 +80,22 @@ Configura estas variables en Railway Dashboard → Variables:
 
 ```env
 OPENAI_API_KEY=sk-proj-tu-clave-aqui
-QDRANT_URL=https://tu-cluster.europe-west3-0.gcp.cloud.qdrant.io:6333
-QDRANT_API_KEY=qdrant_tu-api-key-aqui
 ADMIN_USER=admin-gd
 ADMIN_PASSWORD=tu-password-seguro
 SECRET_KEY=una-clave-secreta-muy-larga-de-al-menos-32-caracteres-aleatorios
+```
+
+### 🗄️ Qdrant (Elige una opción):
+
+**Para Qdrant en Railway:**
+```env
+QDRANT_PRIVATE_URL=http://qdrant.railway.internal:6333
+```
+
+**Para Qdrant Cloud:**
+```env
+QDRANT_URL=https://tu-cluster.europe-west3-0.gcp.cloud.qdrant.io:6333
+QDRANT_API_KEY=qdrant_tu-api-key-aqui
 ```
 
 ### 📋 Opcionales
