@@ -48,28 +48,23 @@ class GemeloAgent:
         # Cargar los system prompts
         self.prompts = self._load_prompts()
     
-    def _load_prompts(self) -> Dict[str, str]:
+    def _load_prompts(self):
         """
-        Carga los prompts del sistema desde archivos
+        Carga los prompts desde archivos externos
         
         Returns:
-            Diccionario con los prompts
+            Diccionario con los prompts cargados
         """
         prompts_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "prompts")
         prompts = {}
         
-        # Verificar si existe el directorio de prompts
-        if not os.path.exists(prompts_dir):
-            logger.warning(f"El directorio de prompts {prompts_dir} no existe")
-            os.makedirs(prompts_dir, exist_ok=True)
-            
-            # Crear prompts por defecto
-            return {
-                "system": "Eres el gemelo digital de Agustín Modia. Responde como si fueras Agustín.",
-                "classify": "Determina si la consulta necesita información específica de los documentos.",
-                "router": "Selecciona la mejor ruta para responder a la consulta.",
-                "rag": "Genera una respuesta basada en el contexto proporcionado."
-            }
+        for prompt_file in ["classify.txt", "rag.txt", "router.txt"]:
+            path = os.path.join(prompts_dir, prompt_file)
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    prompts[os.path.splitext(prompt_file)[0]] = f.read()
+            else:
+                logger.warning(f"Archivo de prompt no encontrado: {path}")
         
         # Cargar prompts desde archivos
         for prompt_file in os.listdir(prompts_dir):
@@ -91,6 +86,156 @@ class GemeloAgent:
                 prompts[key] = value
         
         return prompts
+    
+    def export_workflow_svg(self, filename="langgraph_workflow.svg"):
+        """
+        Exporta el grafo de nodos de LangGraph como SVG.
+        
+        Args:
+            filename: Nombre del archivo de salida
+            
+        Returns:
+            Ruta del archivo SVG generado
+        """
+        try:
+            # Para la visualización, necesitamos recrear el grafo sin compilarlo
+            # ya que el objeto CompiledStateGraph no tiene el método draw()
+            visualization_graph = self._create_visualization_graph()
+                
+            # Crear directorio temporal si no existe
+            output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static")
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Ruta completa del archivo
+            output_path = os.path.join(output_dir, filename)
+            
+            # Generar el SVG usando get_graph
+            from langgraph.graph.graph import CompiledGraph
+            
+            # Compilar temporalmente para obtener el grafo
+            compiled_graph = visualization_graph.compile()
+            
+            # Usar get_graph().draw_mermaid_png() o crear manualmente el SVG
+            # Como alternativa, creamos un SVG simple manualmente
+            svg_content = self._create_manual_svg()
+            
+            # Escribir el SVG
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(svg_content)
+            
+            logger.info(f"Grafo exportado como {output_path}")
+            return output_path
+        except Exception as e:
+            logger.error(f"Error exportando grafo: {str(e)}")
+            raise
+    
+    def _create_manual_svg(self):
+        """
+        Crea un SVG manual del flujo de trabajo del agente
+        
+        Returns:
+            Contenido SVG como string
+        """
+        svg_content = '''<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <style>
+      .node { fill: #e1f5fe; stroke: #01579b; stroke-width: 2; }
+      .start { fill: #c8e6c9; stroke: #2e7d32; }
+      .end { fill: #ffcdd2; stroke: #c62828; }
+      .text { font-family: Arial, sans-serif; font-size: 14px; text-anchor: middle; }
+      .edge { stroke: #333; stroke-width: 2; fill: none; marker-end: url(#arrowhead); }
+      .condition { fill: #fff9c4; stroke: #f57f17; }
+    </style>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#333" />
+    </marker>
+  </defs>
+  
+  <!-- START node -->
+  <rect x="350" y="50" width="100" height="40" rx="20" class="start" />
+  <text x="400" y="75" class="text">START</text>
+  
+  <!-- Search Knowledge node -->
+  <rect x="300" y="150" width="200" height="60" rx="10" class="node" />
+  <text x="400" y="175" class="text">Search Knowledge</text>
+  <text x="400" y="195" class="text" style="font-size: 12px;">(Buscar en vectores)</text>
+  
+  <!-- Decision diamond -->
+  <polygon points="400,280 480,320 400,360 320,320" class="condition" />
+  <text x="400" y="320" class="text" style="font-size: 12px;">¿Datos</text>
+  <text x="400" y="335" class="text" style="font-size: 12px;">relevantes?</text>
+  
+  <!-- Generate Response node -->
+  <rect x="150" y="450" width="180" height="60" rx="10" class="node" />
+  <text x="240" y="475" class="text">Generate Response</text>
+  <text x="240" y="495" class="text" style="font-size: 12px;">(Con contexto RAG)</text>
+  
+  <!-- No Data Response node -->
+  <rect x="470" y="450" width="180" height="60" rx="10" class="node" />
+  <text x="560" y="475" class="text">No Data Response</text>
+  <text x="560" y="495" class="text" style="font-size: 12px;">(Sin información)</text>
+  
+  <!-- END node -->
+  <rect x="350" y="550" width="100" height="40" rx="20" class="end" />
+  <text x="400" y="575" class="text">END</text>
+  
+  <!-- Edges -->
+  <!-- START to Search Knowledge -->
+  <line x1="400" y1="90" x2="400" y2="150" class="edge" />
+  
+  <!-- Search Knowledge to Decision -->
+  <line x1="400" y1="210" x2="400" y2="280" class="edge" />
+  
+  <!-- Decision to Generate Response (YES) -->
+  <line x1="350" y1="330" x2="240" y2="450" class="edge" />
+  <text x="280" y="380" class="text" style="font-size: 12px; fill: green;">Sí</text>
+  
+  <!-- Decision to No Data Response (NO) -->
+  <line x1="450" y1="330" x2="560" y2="450" class="edge" />
+  <text x="520" y="380" class="text" style="font-size: 12px; fill: red;">No</text>
+  
+  <!-- Generate Response to END -->
+  <line x1="240" y1="510" x2="380" y2="550" class="edge" />
+  
+  <!-- No Data Response to END -->
+  <line x1="560" y1="510" x2="420" y2="550" class="edge" />
+  
+  <!-- Title -->
+  <text x="400" y="30" class="text" style="font-size: 18px; font-weight: bold;">Gemelo Digital - Flujo de Agente LangGraph</text>
+</svg>'''
+        return svg_content
+            
+    def _create_visualization_graph(self):
+        """
+        Crea una versión del grafo de estados específicamente para visualización
+        (sin compilar)
+        
+        Returns:
+            StateGraph: Grafo de estados sin compilar para visualización
+        """
+        # Crear el grafo
+        graph = StateGraph(AgentState)
+        
+        # Definir nodos (los mismos que en _create_agent_workflow)
+        graph.add_node("search_knowledge", self._search_knowledge)
+        graph.add_node("generate_response", self._generate_response)
+        graph.add_node("no_data_response", self._no_data_response)
+        
+        # Definir flujo - SIEMPRE buscar en la base de conocimientos primero
+        graph.add_edge(START, "search_knowledge")
+        
+        # Basado en si se encontró información relevante, decidir qué respuesta dar
+        graph.add_conditional_edges(
+            "search_knowledge",
+            lambda state: "generate_response" if state.get("has_relevant_data", False) else "no_data_response"
+        )
+        
+        graph.add_edge("generate_response", END)
+        graph.add_edge("no_data_response", END)
+        
+        # Devolver el grafo SIN compilar
+        return graph
     
     def _create_agent_workflow(self) -> StateGraph:
         """

@@ -1,8 +1,12 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi.responses import FileResponse, JSONResponse
 from logging import getLogger
 from typing import List, Dict, Any
+import os
+from pathlib import Path
 
 from app.services.qdrant_service import QdrantService
+from app.agents.gemelo_agent import GemeloAgent
 
 router = APIRouter(
     prefix="/admin",
@@ -88,3 +92,38 @@ async def get_documents_metadata() -> Dict[str, Any]:
     except Exception as e:
         logger.error(f"Error obteniendo metadatos de documentos: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/langgraph-svg")
+async def get_langgraph_svg():
+    """
+    Genera y devuelve una visualización SVG del grafo de LangGraph
+    que se utiliza en el agente conversacional.
+    
+    Returns:
+        Archivo SVG para visualizar el flujo del agente
+    """
+    try:
+        # Crear instancia del agente
+        agent = GemeloAgent()
+        
+        # Exportar el grafo a SVG
+        filename = "langgraph_workflow.svg"
+        svg_path = agent.export_workflow_svg(filename)
+        
+        # Verificar si el archivo existe
+        if not os.path.exists(svg_path):
+            return JSONResponse(
+                status_code=500,
+                content={"error": f"No se pudo generar el archivo SVG: {svg_path}"})
+        
+        # Devolver el archivo como respuesta
+        return FileResponse(
+            path=svg_path,
+            media_type="image/svg+xml",
+            filename=filename
+        )
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Error generando grafo LangGraph: {str(e)}"})

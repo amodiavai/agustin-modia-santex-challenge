@@ -55,6 +55,11 @@ export const authService = {
     return !!localStorage.getItem('token');
   },
   
+  // Obtener token de localStorage
+  getToken: () => {
+    return localStorage.getItem('token');
+  },
+  
   // Verificar token
   verifyToken: async () => {
     const response = await api.get('/auth/verify');

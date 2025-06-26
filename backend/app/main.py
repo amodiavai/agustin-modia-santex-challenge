@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import os
 import logging
 from dotenv import load_dotenv
+import pathlib
 
 from app.api import chat, documents, admin, auth
 from app.database import init_db
@@ -60,6 +62,13 @@ async def root():
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+# Crear directorio para archivos estáticos si no existe
+static_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
+os.makedirs(static_dir, exist_ok=True)
+
+# Montar directorio de archivos estáticos
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 if __name__ == "__main__":
     import uvicorn
