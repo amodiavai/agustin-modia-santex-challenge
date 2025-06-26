@@ -14,7 +14,7 @@ class QdrantService:
         """
         self.host = os.getenv("QDRANT_HOST", "localhost")
         self.port = int(os.getenv("QDRANT_PORT", "6333"))
-        self.collection_name = os.getenv("COLLECTION_NAME", "gemelo_agustin")
+        self.collection_name = os.getenv("COLLECTION_NAME", "gemelo_agustin_large")
         self.vector_size = 3072  # Dimensión del modelo text-embedding-3-large
         
         # Conectar al servidor de Qdrant

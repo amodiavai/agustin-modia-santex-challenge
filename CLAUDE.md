@@ -53,6 +53,7 @@ npm run preview    # Preview production build
 
 **Required Environment Variables:**
 - `OPENAI_API_KEY` - OpenAI API key for LLM and embeddings
+- `OPENAI_MODEL=gpt-4o-mini` - OpenAI model (configurable, defaults to gpt-4o-mini)
 - `QDRANT_HOST=qdrant` - Vector database host
 - `QDRANT_PORT=6333` - Vector database port  
 - `COLLECTION_NAME=gemelo_agustin` - Vector collection name
@@ -94,6 +95,15 @@ The application includes comprehensive logging and error handling. Check Docker 
 docker-compose logs backend
 docker-compose logs frontend
 docker-compose logs qdrant
+```
+
+**Development without Docker:**
+```bash
+# Backend only (requires running Qdrant separately)
+cd backend && python -m uvicorn app.main:app --reload
+
+# Frontend only
+cd frontend && npm run dev
 ```
 
 ## Vector Database
