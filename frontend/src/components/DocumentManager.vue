@@ -255,6 +255,7 @@ export default {
       clearInterval(this.refreshInterval);
     }
   }
+}
 </script>
 
 <style scoped>
