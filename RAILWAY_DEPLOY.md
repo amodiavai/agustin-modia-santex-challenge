@@ -39,6 +39,12 @@
 5. Railway detectará automáticamente la configuración
 ```
 
+### Si Railway falla detectando Python:
+
+1. **Renombrar Dockerfile**: `mv Dockerfile.railway Dockerfile`
+2. **Re-deployar**: Railway usará el Dockerfile personalizado
+3. **O usar CLI**: Ver Opción 2
+
 ### Opción 2: Deploy con CLI
 
 ```bash
