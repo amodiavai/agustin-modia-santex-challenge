@@ -267,6 +267,56 @@ class QdrantService:
                 "error": str(e)
             }
     
+    async def get_documents_by_filename(self, filename: str) -> List[Dict[str, Any]]:
+        """
+        Obtiene todos los documentos que pertenecen a un archivo específico
+        
+        Args:
+            filename: Nombre del archivo a buscar
+            
+        Returns:
+            Lista de documentos encontrados
+        """
+        try:
+            # Verificar si la colección existe
+            if not await self.collection_exists():
+                logger.warning(f"No se puede buscar {filename}: La colección no existe")
+                return []
+                
+            # Buscar puntos con el nombre de archivo
+            search_response = self.client.scroll(
+                collection_name=self.collection_name,
+                scroll_filter=models.Filter(
+                    must=[
+                        models.FieldCondition(
+                            key="metadata.file_name",
+                            match=models.MatchValue(value=filename)
+                        )
+                    ]
+                ),
+                limit=10000,  # Máximo razonable para recuperar todos los puntos
+                with_payload=True,  # Necesitamos los payloads para ver los metadatos
+                with_vectors=False,  # No necesitamos los vectores
+            )
+            
+            # Convertir resultados a formato más amigable
+            documents = []
+            for point in search_response[0]:
+                if hasattr(point, 'payload') and point.payload:
+                    doc = {
+                        'id': point.id,
+                        'text': point.payload.get('text', ''),
+                        'metadata': point.payload.get('metadata', {})
+                    }
+                    documents.append(doc)
+            
+            logger.info(f"Encontrados {len(documents)} documentos con nombre {filename}")
+            return documents
+            
+        except Exception as e:
+            logger.error(f"Error buscando documentos por nombre {filename}: {str(e)}")
+            return []
+    
     async def delete_by_filter(self, filter_params: Dict) -> int:
         """
         Elimina documentos que coincidan con el filtro
