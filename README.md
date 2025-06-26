@@ -22,6 +22,8 @@ Al iniciar por primera vez, el sistema verifica automáticamente la existencia d
   - PyPDF2 para procesamiento de documentos
   - Qdrant para base de datos vectorial
   - OpenAI API para embeddings y generación de texto
+  - SQLite para almacenamiento de historial de chat
+  - JWT para autenticación y autorización
 
 - **Frontend**:
   - Vue.js 3 para la interfaz de usuario
@@ -38,7 +40,9 @@ Al iniciar por primera vez, el sistema verifica automáticamente la existencia d
 
 ## Características Principales
 
+- **Sistema de Autenticación**: Acceso seguro con credenciales administrativas
 - **Chat Conversacional**: Interacción en tiempo real con streaming de respuestas
+- **Historial Persistente**: Almacenamiento automático de todas las conversaciones
 - **Procesamiento de Documentos**: Subida y procesamiento de PDFs
 - **Búsqueda Semántica**: Recuperación de información relevante
 - **Personalización**: Sistema de prompts separado para fácil ajuste
@@ -112,9 +116,18 @@ En el primer inicio, el sistema:
 4. Inicia la API del gemelo digital
 
 La aplicación estará disponible en:
-- Frontend: http://localhost:3000
+- Frontend: http://localhost:3000 (requiere autenticación)
 - API Backend: http://localhost:8000
 - Qdrant Dashboard: http://localhost:6333/dashboard
+
+## Credenciales de Acceso
+
+Para acceder a la aplicación, utiliza las siguientes credenciales administrativas:
+
+- **Usuario**: `admin-gd`
+- **Contraseña**: `Pasada por mail en la entrega del desafio`
+
+> **Nota de Seguridad**: En un entorno de producción, estas credenciales deben ser cambiadas y configuradas a través de variables de entorno seguras.
 
 ## Sistema de Prompts
 
@@ -127,12 +140,22 @@ Los prompts del sistema se encuentran en archivos individuales en `backend/app/p
 
 ## Uso de la Aplicación
 
+### Acceso al Sistema
+
+1. Abre http://localhost:3000 en tu navegador
+2. Ingresa las credenciales de acceso:
+   - Usuario: `admin-gd`
+   - Contraseña: `yQ7EpwW5sdjPHut`
+3. Accede al gemelo digital
+
 ### Chat Conversacional
 
 1. Navega a la pestaña "Chat"
-2. Escribe tu mensaje y envíalo
-3. El gemelo digital responderá en tiempo real
-4. Las fuentes utilizadas se mostrarán debajo de la respuesta
+2. **Cargar Historial**: Usa el botón "Cargar Historial" para ver conversaciones anteriores
+3. Escribe tu mensaje y envíalo
+4. El gemelo digital responderá en tiempo real
+5. Las fuentes utilizadas se mostrarán debajo de la respuesta
+6. **Limpiar Historial**: Usa el botón "Limpiar" para eliminar todas las conversaciones guardadas
 
 ### Gestión de Documentos / entrenamiento del gemelo
 
@@ -140,6 +163,12 @@ Los prompts del sistema se encuentran en archivos individuales en `backend/app/p
 2. Sube archivos PDF mediante la interfaz de arrastrar y soltar
 3. Monitorea el progreso del procesamiento
 4. Consulta y gestiona los documentos subidos
+
+### Gestión de Sesión
+
+- **Cerrar Sesión**: Usa el botón "Salir" en la barra superior
+- **Historial Automático**: Todas las conversaciones se guardan automáticamente por usuario
+- **Persistencia**: El historial se mantiene entre sesiones y reinicios del sistema
 
 ## Desarrollo
 
@@ -185,6 +214,18 @@ npm run dev
 - **Agente RAG**:
   - El agente LangGraph determina dinámicamente cuándo usar información de los documentos
   - Mantiene consistencia en las respuestas relacionadas con la información del CV
+
+- **Sistema de Autenticación**:
+  - Autenticación JWT con tokens seguros
+  - Protección de todos los endpoints de chat y documentos
+  - Gestión de sesiones con logout seguro
+  - Credenciales administrativas configurables
+
+- **Historial de Conversaciones**:
+  - Base de datos SQLite para almacenamiento persistente
+  - Historial específico por usuario autenticado
+  - Funcionalidades de carga y limpieza de historial
+  - Persistencia entre reinicios del sistema
 
 ---
 

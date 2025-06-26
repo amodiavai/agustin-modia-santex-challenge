@@ -1,7 +1,27 @@
 <template>
   <div class="card fade-in">
-    <h2>Chat con Agustín Digital</h2>
-    <p class="text-sm text-muted mb-4">Conversá con el gemelo digital de Agustín Modia</p>
+    <div class="chat-header">
+      <div>
+        <h2>Chat con Agustín Digital</h2>
+        <p class="text-sm text-muted mb-4">Conversá con el gemelo digital de Agustín Modia</p>
+      </div>
+      <div class="chat-controls">
+        <button class="button button-secondary chat-control-btn" @click="loadChatHistory" :disabled="loading">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+          </svg>
+          Cargar Historial
+        </button>
+        <button class="button button-danger chat-control-btn" @click="clearChatHistory" :disabled="loading">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+          </svg>
+          Limpiar
+        </button>
+      </div>
+    </div>
     
     <div class="chat-container">
       <div class="chat-messages" ref="chatMessages">
@@ -68,6 +88,7 @@
 <script>
 import { marked } from 'marked';
 import axios from 'axios';
+import { chatService } from '../services/api.js';
 
 export default {
   name: 'ChatInterface',
@@ -77,7 +98,8 @@ export default {
       messages: [],
       isTyping: false,
       sources: [],
-      streamController: null
+      streamController: null,
+      loading: false
     };
   },
   methods: {
@@ -227,6 +249,65 @@ export default {
     formatMessage(text) {
       // Convertir markdown a HTML para mejor visualización
       return marked(text);
+    },
+    
+    async loadChatHistory() {
+      this.loading = true;
+      try {
+        const historyData = await chatService.getHistory();
+        
+        // Clear current messages except welcome message
+        this.messages = [];
+        
+        // Convert history data to message format
+        historyData.forEach(item => {
+          this.messages.push({
+            role: 'user',
+            content: item.user_message
+          });
+          this.messages.push({
+            role: 'assistant',
+            content: item.assistant_response
+          });
+        });
+        
+        // Scroll to bottom after loading
+        this.$nextTick(() => {
+          this.scrollToBottom();
+        });
+        
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+        alert('Error al cargar el historial de chat');
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    async clearChatHistory() {
+      if (!confirm('¿Estás seguro de que querés limpiar todo el historial de chat?')) {
+        return;
+      }
+      
+      this.loading = true;
+      try {
+        await chatService.clearHistory();
+        this.messages = [];
+        
+        // Add welcome message after clearing
+        setTimeout(() => {
+          this.messages.push({
+            role: 'assistant',
+            content: '¡Hola! Soy el gemelo digital de Agustín Modia. ¿En qué puedo ayudarte hoy?'
+          });
+        }, 500);
+        
+      } catch (error) {
+        console.error('Error clearing chat history:', error);
+        alert('Error al limpiar el historial de chat');
+      } finally {
+        this.loading = false;
+      }
     }
   },
   mounted() {
@@ -274,5 +355,71 @@ export default {
 
 .text-muted {
   color: var(--color-text-light);
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
+
+.chat-controls {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.chat-control-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.chat-control-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.button-secondary {
+  background-color: rgba(0, 191, 191, 0.1);
+  color: var(--color-secondary);
+  border: 1px solid rgba(0, 191, 191, 0.3);
+}
+
+.button-secondary:hover:not(:disabled) {
+  background-color: rgba(0, 191, 191, 0.2);
+  border-color: var(--color-secondary);
+}
+
+.button-danger {
+  background-color: rgba(255, 69, 69, 0.1);
+  color: #ff6b6b;
+  border: 1px solid rgba(255, 69, 69, 0.3);
+}
+
+.button-danger:hover:not(:disabled) {
+  background-color: rgba(255, 69, 69, 0.2);
+  border-color: #ff6b6b;
+}
+
+@media (max-width: 768px) {
+  .chat-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .chat-controls {
+    justify-content: stretch;
+  }
+  
+  .chat-control-btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
 </style>

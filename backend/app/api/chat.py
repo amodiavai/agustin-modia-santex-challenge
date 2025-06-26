@@ -2,8 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
 from typing import List, Dict, Any
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 import logging
 from app.services.chat_service import ChatService
+from app.services.chat_history_service import ChatHistoryService, ChatHistoryItem
+from app.api.auth import get_current_user
+from app.database import get_db
 
 router = APIRouter(
     prefix="/chat",
@@ -26,14 +30,20 @@ class ChatResponse(BaseModel):
     response: str
     sources: List[Dict[str, Any]] = []
 
-# Función para obtener servicio de chat
+# Función para obtener servicios
 async def get_chat_service():
     return ChatService()
+
+async def get_chat_history_service():
+    return ChatHistoryService()
 
 @router.post("/send", response_model=ChatResponse)
 async def send_message(
     request: ChatRequest,
-    chat_service: ChatService = Depends(get_chat_service)
+    current_user: str = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service),
+    chat_history_service: ChatHistoryService = Depends(get_chat_history_service),
+    db: Session = Depends(get_db)
 ):
     """
     Envía un mensaje al gemelo digital y obtiene una respuesta.
@@ -44,6 +54,14 @@ async def send_message(
         
         # Obtener respuesta del servicio de chat
         response = await chat_service.get_response(request.message, history)
+        
+        # Guardar en historial
+        chat_history_service.save_chat_message(
+            db=db,
+            user_message=request.message,
+            assistant_response=response["response"],
+            session_id=current_user
+        )
         
         return {
             "response": response["response"],
@@ -84,6 +102,44 @@ async def stream_message(
         )
     except Exception as e:
         logger.error(f"Error en /chat/stream: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.get("/history", response_model=List[ChatHistoryItem])
+async def get_chat_history(
+    current_user: str = Depends(get_current_user),
+    chat_history_service: ChatHistoryService = Depends(get_chat_history_service),
+    db: Session = Depends(get_db),
+    limit: int = 50
+):
+    """
+    Obtiene el historial de chat del usuario.
+    """
+    try:
+        return chat_history_service.get_chat_history(db, current_user, limit)
+    except Exception as e:
+        logger.error(f"Error en /chat/history: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+@router.delete("/history")
+async def clear_chat_history(
+    current_user: str = Depends(get_current_user),
+    chat_history_service: ChatHistoryService = Depends(get_chat_history_service),
+    db: Session = Depends(get_db)
+):
+    """
+    Limpia el historial de chat del usuario.
+    """
+    try:
+        chat_history_service.clear_chat_history(db, current_user)
+        return {"message": "Chat history cleared successfully"}
+    except Exception as e:
+        logger.error(f"Error en /chat/history: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

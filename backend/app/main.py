@@ -4,7 +4,8 @@ import os
 import logging
 from dotenv import load_dotenv
 
-from app.api import chat, documents, admin
+from app.api import chat, documents, admin, auth
+from app.database import init_db
 
 # Cargar variables de entorno
 load_dotenv()
@@ -32,10 +33,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Inicializar base de datos
+init_db()
+
 # Incluir routers
-app.include_router(chat.router)
-app.include_router(documents.router)
-app.include_router(admin.router)
+logger.info("🔐 Registrando rutas de autenticación...")
+app.include_router(auth.router, prefix="/api/auth", tags=["authentication"])
+logger.info("💬 Registrando rutas de chat...")
+app.include_router(chat.router, prefix="/api")
+logger.info("📄 Registrando rutas de documentos...")
+app.include_router(documents.router, prefix="/api")
+logger.info("⚙️ Registrando rutas de admin...")
+app.include_router(admin.router, prefix="/api")
+logger.info("✅ Todas las rutas registradas correctamente")
 
 # Ruta principal
 @app.get("/")
