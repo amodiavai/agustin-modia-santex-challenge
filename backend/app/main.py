@@ -4,7 +4,7 @@ import os
 import logging
 from dotenv import load_dotenv
 
-from app.api import chat, documents
+from app.api import chat, documents, admin
 
 # Cargar variables de entorno
 load_dotenv()
@@ -35,6 +35,7 @@ app.add_middleware(
 # Incluir routers
 app.include_router(chat.router)
 app.include_router(documents.router)
+app.include_router(admin.router)
 
 # Ruta principal
 @app.get("/")

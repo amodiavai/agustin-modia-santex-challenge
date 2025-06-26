@@ -16,7 +16,7 @@ class EmbeddingsService:
             logger.warning("OPENAI_API_KEY no encontrada en variables de entorno")
             
         self.client = OpenAI(api_key=self.api_key)
-        self.model = "text-embedding-3-small"
+        self.model = "text-embedding-3-large"
         self.max_retries = 3
         self.retry_delay = 5  # segundos
     
