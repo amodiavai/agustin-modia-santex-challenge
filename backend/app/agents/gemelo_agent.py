@@ -34,7 +34,8 @@ class GemeloAgent:
             
         self.client = OpenAI(api_key=self.api_key)
         self.async_client = AsyncOpenAI(api_key=self.api_key)
-        self.model = "gpt-4o-mini"
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        logger.info(f"Utilizando modelo OpenAI: {self.model}")
         
         # Inicializar servicios externos
         self.qdrant_service = QdrantService()

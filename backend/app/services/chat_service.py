@@ -20,7 +20,8 @@ class ChatService:
             
         self.client = OpenAI(api_key=self.api_key)
         self.async_client = AsyncOpenAI(api_key=self.api_key)
-        self.model = "gpt-4o-mini"
+        self.model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+        logger.info(f"Servicio de chat utilizando modelo OpenAI: {self.model}")
         
         # Inicializar el agente de LangGraph
         self.agent = GemeloAgent()
