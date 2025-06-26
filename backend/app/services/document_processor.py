@@ -3,6 +3,7 @@ import logging
 from typing import List, Dict, Any
 from PyPDF2 import PdfReader
 import re
+import textwrap
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,10 @@ class DocumentProcessor:
             # Obtener nombre del archivo sin extensión
             file_name = os.path.basename(file_path).replace('.pdf', '')
             
+            # Generar un resumen del documento
+            document_summary = self._generate_document_summary(extracted_text)
+            logger.info(f"Resumen generado para {file_name}: {document_summary[:100]}...")
+            
             # Dividir el texto en chunks
             text_chunks = self._create_chunks(extracted_text)
             
@@ -63,6 +68,8 @@ class DocumentProcessor:
                         "file_name": file_name,
                         "chunk_id": i,
                         "chunk_size": len(chunk),
+                        "document_summary": document_summary,
+                        "document_type": "resume" if "resume" in file_name.lower() or "cv" in file_name.lower() else "general"
                     }
                 }
                 documents.append(doc)
@@ -160,6 +167,47 @@ class DocumentProcessor:
             
         return chunks
         
+    def _generate_document_summary(self, text_by_page: List[Dict[str, Any]]) -> str:
+        """
+        Genera un resumen breve del documento basado en las primeras páginas
+        
+        Args:
+            text_by_page: Lista de diccionarios con el texto y número de página
+            
+        Returns:
+            String con un resumen del documento (máximo 500 caracteres)
+        """
+        try:
+            # Extraer texto de las primeras dos páginas o todas si hay menos
+            intro_text = ""
+            for i, page_info in enumerate(text_by_page):
+                if i < 2:  # Solo primeras dos páginas
+                    intro_text += page_info["content"] + "\n"
+                else:
+                    break
+            
+            # Limpiar y normalizar el texto
+            intro_text = re.sub(r'\s+', ' ', intro_text).strip()
+            
+            # Tomar las primeras 1000 caracteres para el resumen
+            if len(intro_text) > 1000:
+                intro_text = intro_text[:1000]
+            
+            # Formatear como un resumen conciso (máximo 500 caracteres)
+            words = intro_text.split()
+            summary_words = words[:100]  # Aproximadamente 500 caracteres
+            summary = ' '.join(summary_words)
+            
+            # Asegurar que no exceda 500 caracteres
+            if len(summary) > 500:
+                summary = textwrap.shorten(summary, width=500, placeholder="...")
+                
+            return summary
+            
+        except Exception as e:
+            logger.error(f"Error generando resumen del documento: {str(e)}")
+            return "No fue posible generar un resumen para este documento."
+    
     def save_uploaded_file(self, file_content: bytes, filename: str) -> str:
         """
         Guarda un archivo subido en el directorio de uploads

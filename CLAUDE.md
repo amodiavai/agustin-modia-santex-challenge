@@ -17,7 +17,7 @@ Vue.js Frontend → FastAPI Backend → LangGraph Agent → Qdrant Vector DB + O
 - **Frontend**: Vue.js 3 with Vite build system
 - **Backend**: FastAPI with LangGraph agent orchestration
 - **Vector Database**: Qdrant for semantic search
-- **AI Services**: OpenAI GPT-4o-mini + text-embedding-3-small
+- **AI Services**: OpenAI GPT-4o-mini + text-embedding-3-large
 - **Document Processing**: PyPDF2 for PDF parsing and chunking
 
 ## Development Commands

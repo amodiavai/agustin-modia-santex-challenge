@@ -54,33 +54,55 @@
         <div 
           v-for="(doc, index) in documents" 
           :key="index"
-          class="document-item"
+          class="document-item expanded-doc-item"
         >
-          <div class="document-info">
-            <div class="document-name">{{ doc.filename }}</div>
-            <div class="document-meta text-sm">
-              <span class="badge" :class="{
-                'badge-success': doc.status === 'completed',
-                'badge-warning': doc.status === 'processing',
-                'badge-error': doc.status === 'failed'
-              }">
-                {{ doc.status }}
-              </span>
-              <span class="document-date">{{ formatDate(doc.created_at) }}</span>
+          <div class="document-header">
+            <div class="document-info">
+              <div class="document-name-wrapper">
+                <div class="document-name">{{ doc.filename }}</div>
+                <span class="document-type-badge" :class="{'document-type-resume': doc.document_type === 'resume'}">
+                  {{ doc.document_type === 'resume' ? 'CV/Resumen' : 'General' }}
+                </span>
+              </div>
+              <div class="document-meta text-sm">
+                <span class="badge" :class="{
+                  'badge-success': doc.status === 'completed',
+                  'badge-warning': doc.status === 'processing',
+                  'badge-error': doc.status === 'failed'
+                }">
+                  {{ doc.status }}
+                </span>
+                <span class="document-date">{{ formatDate(doc.created_at) }}</span>
+                <span class="chunks-count">{{ doc.chunk_count || 0 }} chunks</span>
+              </div>
+            </div>
+            
+            <div class="document-actions">
+              <button 
+                class="button button-danger button-icon" 
+                @click="confirmDelete(doc.filename)"
+                title="Eliminar documento"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                  <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                </svg>
+              </button>
             </div>
           </div>
-          
-          <div class="document-actions">
-            <button 
-              class="button button-danger button-icon" 
-              @click="confirmDelete(doc.filename)"
-              title="Eliminar documento"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
-                <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
-              </svg>
-            </button>
+
+          <!-- Sección de metadatos del documento -->
+          <div class="document-metadata" v-if="doc.document_summary">
+            <div class="metadata-title">Resumen del documento:</div>
+            <div class="document-summary">
+              {{ doc.document_summary }}
+            </div>
+          </div>
+          <div class="document-metadata" v-else>
+            <div class="metadata-title">Sin resumen disponible</div>
+            <div class="document-summary text-muted">
+              Este documento no tiene un resumen generado. Los documentos procesados recientemente incluyen resúmenes automáticos.
+            </div>
           </div>
         </div>
       </div>
@@ -233,91 +255,235 @@ export default {
       clearInterval(this.refreshInterval);
     }
   }
-}
 </script>
 
 <style scoped>
 .card-header {
-  margin-bottom: 1rem;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 3rem 0;
-  color: var(--color-text-light);
-}
-
-.empty-icon {
-  color: var(--color-text-light);
-}
-
-.stats-container {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.stat-card {
-  flex: 1;
-  padding: 1rem;
-  background-color: var(--color-background);
-  border-radius: var(--radius);
-  margin-right: 0.5rem;
-}
-
-.stat-title {
-  font-size: 0.875rem;
-  color: var(--color-text-light);
-  margin-bottom: 0.5rem;
-}
-
-.stat-value {
-  font-size: 1.25rem;
-  font-weight: 600;
-}
-
-.documents-list {
-  margin-top: 1rem;
-}
-
-.document-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background-color: var(--color-background);
-  border-radius: var(--radius);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.documents-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.document-item {
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.document-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
   margin-bottom: 0.5rem;
-  transition: background-color var(--transition);
+}
+
+.expanded-doc-item {
+  padding: 1rem;
 }
 
 .document-item:hover {
-  background-color: rgba(79, 70, 229, 0.05);
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.document-name-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .document-name {
-  font-weight: 500;
-  margin-bottom: 0.25rem;
+  font-weight: 600;
 }
 
 .document-meta {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: var(--color-text-light);
+  gap: 0.75rem;
+  color: var(--text-muted);
 }
 
 .document-date {
+  white-space: nowrap;
+}
+
+.chunks-count {
   font-size: 0.75rem;
+  color: var(--text-muted);
+  background-color: var(--secondary-bg);
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+}
+
+.document-type-badge {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.document-type-resume {
+  background-color: #cff4fc;
+  color: #055160;
+}
+
+.document-metadata {
+  background-color: #f8f9fa;
+  border-radius: 0.375rem;
+  padding: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  border-left: 3px solid #dee2e6;
+}
+
+.metadata-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6c757d;
+  margin-bottom: 0.25rem;
+}
+
+.document-summary {
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #212529;
+  word-break: break-word;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 1rem;
+  background-color: var(--badge-bg);
+  color: var(--badge-text);
+}
+
+.badge-success {
+  background-color: #d1e7dd;
+  color: #0a3622;
+}
+
+.badge-warning {
+  background-color: #fff3cd;
+  color: #664d03;
+}
+
+.badge-error {
+  background-color: #f8d7da;
+  color: #842029;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  user-select: none;
+  border: 1px solid transparent;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  border-radius: 0.25rem;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.button-icon {
+  padding: 0.375rem;
+}
+
+.button-secondary {
+  background-color: var(--secondary-bg);
+  color: var(--secondary-text);
+  border-color: var(--border-color);
+}
+
+.button-secondary:hover {
+  background-color: var(--secondary-hover-bg);
+}
+
+.button-danger {
+  background-color: #f8d7da;
+  color: #842029;
+  border-color: #f5c2c7;
+}
+
+.button-danger:hover {
+  background-color: #f5c2c7;
 }
 
 .loading-spinner {
+  display: inline-block;
   width: 2rem;
   height: 2rem;
-  border: 3px solid rgba(79, 70, 229, 0.3);
-  border-top-color: var(--color-primary);
+  border: 0.25rem solid rgba(0, 0, 0, 0.1);
   border-radius: 50%;
-  margin: 0 auto;
-  animation: spinner 1s linear infinite;
+  border-top-color: var(--primary-color);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.empty-state {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.empty-icon {
+  color: var(--border-color);
+}
+
+.stats-container {
+  border-bottom: 1px solid var(--border-color);
+  padding: 1rem;
+}
+
+.stat-card {
+  flex: 1;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.stat-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.text-sm {
+  font-size: 0.875rem;
+}
+
+.text-muted {
+  color: var(--text-muted);
 }
 
 .modal-overlay {
@@ -330,45 +496,37 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 999;
 }
 
 .modal-content {
-  background-color: var(--color-surface);
-  border-radius: var(--radius-lg);
+  background-color: var(--card-bg);
+  border-radius: 0.5rem;
   padding: 1.5rem;
+  max-width: 30rem;
   width: 100%;
-  max-width: 400px;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .success-modal {
-  z-index: 1000;
+  background-color: rgba(0, 0, 0, 0.8);
 }
 
 .success-content {
-  background-color: #f0f9f0;
-  border-left: 4px solid #22c55e;
-  max-width: 400px;
+  background-color: var(--card-bg);
   text-align: center;
+  padding: 2rem;
+  border-radius: 0.5rem;
 }
 
 .success-icon {
-  color: #22c55e;
-  display: flex;
-  justify-content: center;
-}
-
-@keyframes spinner {
-  to {
-    transform: rotate(360deg);
-  }
+  color: #198754;
 }
 
 @media (max-width: 640px) {

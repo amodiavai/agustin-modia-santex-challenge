@@ -194,29 +194,73 @@ class GemeloAgent:
                 
             query_vector = query_embeddings[0]
             
-            # Buscar documentos relevantes
+            # Buscar documentos relevantes - Incrementamos el límite para tener más opciones a filtrar
             search_results = await self.qdrant_service.search(
                 query_vector=query_vector,
-                limit=5
+                limit=10  # Aumentamos el límite para tener más opciones
             )
             
             # Extraer texto y fuentes
             context = []
             sources = []
             
+            # Identificar si hay documentos del CV oficial
+            cv_results = []
+            other_results = []
+            
+            # Clasificar los resultados por tipo
             for result in search_results:
+                file_name = result["metadata"].get("file_name", "").lower()
+                
+                # Si el nombre del archivo contiene 'resume' o 'cv', es parte del CV oficial
+                if "resume" in file_name or "cv" in file_name:
+                    cv_results.append(result)
+                else:
+                    other_results.append(result)
+            
+            # Priorizar el CV oficial - máximo 3 fragmentos del CV
+            prioritized_results = cv_results[:3]
+            
+            # Agregar otros resultados hasta completar 5 en total
+            remaining_slots = 5 - len(prioritized_results)
+            if remaining_slots > 0 and other_results:
+                prioritized_results.extend(other_results[:remaining_slots])
+                
+            # Procesar los resultados priorizados
+            for result in prioritized_results:
                 context.append(result["text"])
                 sources.append({
                     "text": result["text"][:150] + "..." if len(result["text"]) > 150 else result["text"],
                     "source": result["metadata"].get("source", ""),
                     "file_name": result["metadata"].get("file_name", ""),
-                    "relevance": result["score"]
+                    "document_summary": result["metadata"].get("document_summary", ""),
+                    "document_type": result["metadata"].get("document_type", "general"),
+                    "relevance": result["score"],
+                    "is_cv": "resume" in result["metadata"].get("file_name", "").lower() or "cv" in result["metadata"].get("file_name", "").lower()
                 })
             
-            # Actualizar el proceso de pensamiento
+            # Actualizar el proceso de pensamiento con información detallada
             new_thought = thought_process + f"\n\nBúsqueda RAG: Encontrados {len(search_results)} documentos relevantes."
+            
+            # Agregar información de los resúmenes de documentos si están disponibles
             if sources:
-                new_thought += f"\nFuentes principales: {', '.join([s['file_name'] for s in sources[:2]])}"
+                # Obtener nombres de archivos de las fuentes principales
+                main_sources = [s['file_name'] for s in sources[:2]]
+                new_thought += f"\nFuentes principales: {', '.join(main_sources)}"
+                
+                # Agregar resúmenes de documentos
+                doc_summaries = []
+                for s in sources:
+                    if "document_summary" in s and s["document_summary"]:
+                        summary = s["document_summary"]
+                        # Tomar solo los primeros 100 caracteres del resumen para el proceso de pensamiento
+                        short_summary = f"{summary[:100]}..." if len(summary) > 100 else summary
+                        doc_summaries.append(f"{s['file_name']}: {short_summary}")
+                
+                # Agregar resúmenes únicos (sin duplicados)
+                unique_summaries = list(set(doc_summaries))[:2]  # Limitar a 2 resúmenes
+                if unique_summaries:
+                    new_thought += f"\nResúmenes de documentos:\n- {' '.join(unique_summaries)}"
             
             return {
                 **state,

@@ -2,24 +2,32 @@ Tu tarea es analizar la consulta del usuario y determinar si requiere informaci�
 
 INSTRUCCIONES:
 1. Examina cuidadosamente la consulta del usuario.
-2. Determina si la consulta:
+2. IMPORTANTE: La política por defecto es SIEMPRE consultar primero la base de conocimiento.
+3. Determina si la consulta:
+   - Solicita CUALQUIER información personal o profesional sobre Agustín
    - Solicita información factual o específica que podría estar en los documentos
    - Hace referencia a eventos, datos o conocimientos particulares
    - Requiere una respuesta basada en contenido documentado
-   - IMPORTANTE: Se refiere a información personal como educación, trabajo, experiencia, habilidades o cualquier dato biográfico
+   - IMPORTANTE: Se refiere a información personal como edad, fecha de nacimiento, educación, trabajo, experiencia, habilidades, deportes, aficiones, gustos o CUALQUIER dato biográfico
+   - Podría ser reformulada como una pregunta sobre información personal
 
-3. Responde ÚNICAMENTE con "SI" si la consulta necesita información de los documentos.
-4. Responde ÚNICAMENTE con "NO" si la consulta:
-   - Es conversacional general sin relación con datos personales o profesionales
-   - Solicita una opinión sobre temas no relacionados con la información personal
-   - Es una pregunta hipotética no relacionada con la información en documentos
-   - Es sobre información general que no está relacionada con datos personales o profesionales
+4. Responde ÚNICAMENTE con "SI" en todos los casos anteriores o si tienes alguna duda.
+5. Responde ÚNICAMENTE con "NO" SÓLO si la consulta es claramente:
+   - Una conversación social sin relación con ningún dato personal (como saludos simples)
+   - Una solicitud de ayuda sobre el funcionamiento del sistema
 
-5. EJEMPLOS DE CONSULTAS QUE DEBEN SER CLASIFICADAS COMO "SI":
+6. EJEMPLOS DE CONSULTAS QUE DEBEN SER CLASIFICADAS COMO "SI":
    - "¿Dónde trabaja Agustín?"
    - "¿Cuál es su experiencia laboral?"
    - "¿Qué tecnologías conoce?"
    - "¿Dónde estudió?"
    - "¿En qué empresas ha trabajado?"
+   - "¿Cuál es tu edad?" o "¿Cuántos años tienes?" o "¿Qué edad tiene Agustín?"
+   - "¿Qué deportes practicas?" o "¿Te gusta el deporte?"
+   - "¿Tienes mascotas?" o "¿Cuál es tu comida favorita?"
+   - "¿Dónde vives?" o "¿Qué música te gusta?"
+   - "¿Qué cosas te gusta hacer?"
+
+7. ANTE LA DUDA, SIEMPRE RESPONDE "SI" - ES PREFERIBLE CONSULTAR LA BASE DE CONOCIMIENTO EN EXCESO QUE PERDER INFORMACIÓN RELEVANTE.
 
 Proporciona SOLAMENTE "SI" o "NO" como respuesta, sin explicaciones adicionales.

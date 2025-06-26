@@ -231,17 +231,27 @@ async def get_documents_detail(
             for point in results[0]:
                 if "metadata" in point.payload and "file_name" in point.payload["metadata"]:
                     file_name = point.payload["metadata"]["file_name"]
+                    metadata = point.payload["metadata"]
                     
-                    # Si este archivo ya está en nuestro diccionario, continuar
+                    # Si este archivo ya está en nuestro diccionario
                     if file_name in unique_files:
+                        # Incrementar el contador de chunks
+                        unique_files[file_name]["chunk_count"] += 1
                         continue
+                    
+                    # Obtener metadatos relevantes
+                    document_summary = metadata.get("document_summary", "")
+                    document_type = metadata.get("document_type", "general")
                         
-                    # Agregar nuevo documento único
+                    # Agregar nuevo documento único con metadatos
                     unique_files[file_name] = {
                         "id": str(point.id),
                         "filename": file_name,
                         "status": "completed",
-                        "created_at": datetime.now().isoformat()
+                        "created_at": datetime.now().isoformat(),
+                        "document_summary": document_summary,
+                        "document_type": document_type,
+                        "chunk_count": 1
                     }
         
         # Convertir el diccionario en una lista

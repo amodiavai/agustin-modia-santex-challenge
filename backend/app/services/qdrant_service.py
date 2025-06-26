@@ -39,6 +39,32 @@ class QdrantService:
         except Exception as e:
             logger.error(f"Error verificando si existe la colección {self.collection_name}: {str(e)}")
             return False
+    
+    async def get_collection_info(self) -> Dict[str, Any]:
+        """
+        Obtiene información sobre la colección
+        
+        Returns:
+            Diccionario con información de la colección
+        """
+        try:
+            # Verificar si la colección existe
+            if not await self.collection_exists():
+                return {"exists": False, "points_count": 0}
+            
+            # Obtener información de la colección
+            collection_info = self.client.get_collection(collection_name=self.collection_name)
+            
+            # Construir respuesta
+            return {
+                "exists": True,
+                "points_count": collection_info.points_count,
+                "vector_size": collection_info.config.params.vectors.size,
+                "collection_name": self.collection_name
+            }
+        except Exception as e:
+            logger.error(f"Error obteniendo información de colección {self.collection_name}: {str(e)}")
+            return {"exists": False, "error": str(e)}
 
     async def initialize_collection(self) -> bool:
         """

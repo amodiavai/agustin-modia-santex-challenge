@@ -134,7 +134,7 @@ npm run dev
 
 ## Notas Técnicas
 
-- El sistema utiliza OpenAI GPT-4o-mini para las respuestas y text-embedding-3-small para los embeddings
+- El sistema utiliza OpenAI GPT-4o-mini para las respuestas y text-embedding-3-large para los embeddings
 - El procesamiento de documentos divide los PDFs en chunks optimizados para búsqueda semántica
 - La interfaz de chat implementa un sistema de streaming para respuestas en tiempo real
 - El agente LangGraph determina dinámicamente cuándo usar información de los documentos
