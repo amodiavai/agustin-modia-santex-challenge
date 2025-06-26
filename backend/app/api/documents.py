@@ -6,6 +6,8 @@ import logging
 import os
 import uuid
 import asyncio
+from datetime import datetime
+import shutil
 
 from app.services.document_processor import DocumentProcessor
 from app.services.embeddings_service import EmbeddingsService
@@ -201,6 +203,60 @@ async def list_documents(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error obteniendo lista de documentos: {str(e)}"
+        )
+
+@router.get("/detail")
+async def get_documents_detail(
+    qdrant_service: QdrantService = Depends(get_qdrant_service)
+):
+    """
+    Obtiene una lista detallada de documentos con todos sus metadatos
+    """
+    try:
+        if not await qdrant_service.collection_exists():
+            return {"documents": [], "total": 0}
+            
+        # Realizar una búsqueda de todos los documentos con sus metadatos
+        # scroll no es un método asíncrono, así que no usamos await
+        results = qdrant_service.client.scroll(
+            collection_name=qdrant_service.collection_name,
+            limit=100,
+            with_payload=True
+        )
+        
+        # Extraer nombres de archivo únicos de los resultados
+        unique_files = {}
+        
+        if results and results[0]:
+            for point in results[0]:
+                if "metadata" in point.payload and "file_name" in point.payload["metadata"]:
+                    file_name = point.payload["metadata"]["file_name"]
+                    
+                    # Si este archivo ya está en nuestro diccionario, continuar
+                    if file_name in unique_files:
+                        continue
+                        
+                    # Agregar nuevo documento único
+                    unique_files[file_name] = {
+                        "id": str(point.id),
+                        "filename": file_name,
+                        "status": "completed",
+                        "created_at": datetime.now().isoformat()
+                    }
+        
+        # Convertir el diccionario en una lista
+        documents = list(unique_files.values())
+            
+        return {
+            "documents": documents,
+            "total": len(documents)
+        }
+        
+    except Exception as e:
+        logger.error(f"Error obteniendo detalles de documentos: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error obteniendo detalles de documentos: {str(e)}"
         )
 
 @router.delete("/{document_name}")

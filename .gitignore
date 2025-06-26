@@ -3,6 +3,7 @@
 # Python
 __pycache__
 *.pyc
-
+*.cpython-311.pyc
+*.cpython-312.pyc
 
 

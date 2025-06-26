@@ -25,6 +25,21 @@ class QdrantService:
             logger.error(f"Error conectando a Qdrant: {str(e)}")
             raise
     
+    async def collection_exists(self) -> bool:
+        """
+        Verifica si la colección existe en Qdrant
+        
+        Returns:
+            True si la colección existe, False en caso contrario
+        """
+        try:
+            collections = self.client.get_collections().collections
+            collection_names = [collection.name for collection in collections]
+            return self.collection_name in collection_names
+        except Exception as e:
+            logger.error(f"Error verificando si existe la colección {self.collection_name}: {str(e)}")
+            return False
+
     async def initialize_collection(self) -> bool:
         """
         Inicializa la colección en Qdrant si no existe
@@ -34,10 +49,7 @@ class QdrantService:
         """
         try:
             # Verificar si la colección ya existe
-            collections = self.client.get_collections().collections
-            collection_names = [collection.name for collection in collections]
-            
-            if self.collection_name in collection_names:
+            if await self.collection_exists():
                 logger.info(f"Colección {self.collection_name} ya existe")
                 return True
                 

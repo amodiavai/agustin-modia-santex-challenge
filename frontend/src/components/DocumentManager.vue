@@ -127,22 +127,21 @@ export default {
       this.error = null;
       
       try {
-        // En una implementación real, obtendríamos la lista de documentos
-        // desde una API específica. Aquí usamos la información de la colección
-        // para mostrar estadísticas.
-        const response = await axios.get('/api/documents/list');
+        // Obtener la información básica de la colección
+        const collectionResponse = await axios.get('/api/documents/list');
         
-        if (response.data) {
-          this.collectionInfo = response.data;
-          
-          // Simular lista de documentos basada en la información de colección
-          // En una implementación real, esto vendría de la API
-          this.documents = [{
-            id: '1',
-            filename: 'documentos.pdf',
-            status: 'completed',
-            created_at: new Date().toISOString()
-          }];
+        if (collectionResponse.data) {
+          this.collectionInfo = collectionResponse.data;
+        }
+        
+        // Obtener la lista detallada de documentos desde el nuevo endpoint
+        const documentsResponse = await axios.get('/api/documents/detail');
+        
+        if (documentsResponse.data && documentsResponse.data.documents) {
+          // Usar los documentos reales de Qdrant
+          this.documents = documentsResponse.data.documents;
+        } else {
+          this.documents = [];
         }
       } catch (error) {
         console.error('Error obteniendo documentos:', error);
