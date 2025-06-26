@@ -93,8 +93,24 @@
         <p>¿Estás seguro de que querés eliminar el documento "{{ documentToDelete }}"? Esta acción no se puede deshacer.</p>
         <div class="modal-actions mt-4">
           <button class="button button-secondary" @click="showDeleteModal = false">Cancelar</button>
-          <button class="button button-danger" @click="deleteDocument">Eliminar</button>
+          <button class="button button-danger" @click="deleteDocument" :disabled="isDeleting">
+            <span v-if="isDeleting">Eliminando...</span>
+            <span v-else>Eliminar</span>
+          </button>
         </div>
+      </div>
+    </div>
+
+    <!-- Modal de éxito -->
+    <div v-if="showSuccessModal" class="modal-overlay success-modal">
+      <div class="modal-content success-content" @click.stop>
+        <div class="success-icon mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+          </svg>
+        </div>
+        <h3>¡Operación exitosa!</h3>
+        <p>{{ successMessage }}</p>
       </div>
     </div>
   </div>
@@ -111,10 +127,13 @@ export default {
       collectionInfo: {},
       loading: true,
       error: null,
+      refreshInterval: null,
       showDeleteModal: false,
-      documentToDelete: '',
-      refreshInterval: null
-    };
+      showSuccessModal: false,
+      documentToDelete: null,
+      successMessage: '',
+      isDeleting: false,
+    }
   },
   computed: {
     isCollectionActive() {
@@ -158,20 +177,39 @@ export default {
     
     async deleteDocument() {
       try {
+        // Cambiar el cursor a 'wait' para indicar que está procesando
+        document.body.style.cursor = 'wait';
+        this.isDeleting = true;
+        
+        // Realizar la solicitud de eliminación
         const response = await axios.delete(`/api/documents/${this.documentToDelete}`);
         
-        if (response.data && response.data.status === 'success') {
-          // Eliminar documento de la lista local
-          this.documents = this.documents.filter(doc => doc.filename !== this.documentToDelete);
+        // Cerrar el modal de confirmación
+        this.showDeleteModal = false;
+        
+        if (response.data && (response.data.status === 'success' || response.data.status === 'warning')) {
+          // Mostrar mensaje de éxito
+          this.successMessage = `Documento "${this.documentToDelete}" eliminado correctamente`;
+          this.showSuccessModal = true;
           
-          // Actualizar estadísticas
+          // Actualizar estadísticas y lista completa de documentos
           await this.refreshDocuments();
+          
+          // Configurar temporizador para cerrar automáticamente el mensaje
+          setTimeout(() => {
+            this.showSuccessModal = false;
+            this.successMessage = '';
+          }, 2000);
         }
       } catch (error) {
         console.error('Error eliminando documento:', error);
         this.error = error.response?.data?.detail || error.message;
-      } finally {
+        // Mostrar algún error visual si es necesario
         this.showDeleteModal = false;
+      } finally {
+        // Restaurar el cursor
+        document.body.style.cursor = 'default';
+        this.isDeleting = false;
       }
     },
     
@@ -307,7 +345,24 @@ export default {
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 1rem;
+}
+
+.success-modal {
+  z-index: 1000;
+}
+
+.success-content {
+  background-color: #f0f9f0;
+  border-left: 4px solid #22c55e;
+  max-width: 400px;
+  text-align: center;
+}
+
+.success-icon {
+  color: #22c55e;
+  display: flex;
+  justify-content: center;
 }
 
 @keyframes spinner {
