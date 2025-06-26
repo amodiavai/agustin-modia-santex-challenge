@@ -12,18 +12,29 @@ class QdrantService:
         """
         Inicializa el servicio de Qdrant para almacenamiento y búsqueda de vectores
         """
-        self.host = os.getenv("QDRANT_HOST", "localhost")
-        self.port = int(os.getenv("QDRANT_PORT", "6333"))
         self.collection_name = os.getenv("COLLECTION_NAME", "gemelo_agustin_large")
         self.vector_size = 3072  # Dimensión del modelo text-embedding-3-large
         
-        # Conectar al servidor de Qdrant
-        try:
-            self.client = QdrantClient(host=self.host, port=self.port)
-            logger.info(f"Conexión exitosa a Qdrant en {self.host}:{self.port}")
-        except Exception as e:
-            logger.error(f"Error conectando a Qdrant: {str(e)}")
-            raise
+        # Configuración para Railway o Docker
+        qdrant_url = os.getenv("QDRANT_URL")
+        if qdrant_url:
+            # Usar URL completa (para Railway o servicios externos)
+            try:
+                self.client = QdrantClient(url=qdrant_url, api_key=os.getenv("QDRANT_API_KEY"))
+                logger.info(f"Conexión exitosa a Qdrant usando URL: {qdrant_url}")
+            except Exception as e:
+                logger.error(f"Error conectando a Qdrant con URL: {str(e)}")
+                raise
+        else:
+            # Configuración tradicional host:port (para Docker local)
+            self.host = os.getenv("QDRANT_HOST", "localhost")
+            self.port = int(os.getenv("QDRANT_PORT", "6333"))
+            try:
+                self.client = QdrantClient(host=self.host, port=self.port)
+                logger.info(f"Conexión exitosa a Qdrant en {self.host}:{self.port}")
+            except Exception as e:
+                logger.error(f"Error conectando a Qdrant: {str(e)}")
+                raise
     
     async def collection_exists(self) -> bool:
         """

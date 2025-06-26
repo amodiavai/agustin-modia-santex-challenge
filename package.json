@@ -1,0 +1,14 @@
+{
+  "name": "gemelo-digital",
+  "version": "1.0.0",
+  "description": "Gemelo Digital - Conversational AI",
+  "main": "index.js",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build",
+    "start": "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT",
+    "dev": "docker-compose up --build"
+  },
+  "keywords": ["ai", "chatbot", "vue", "fastapi"],
+  "author": "Agustin Modia",
+  "license": "PRIVATE"
+}

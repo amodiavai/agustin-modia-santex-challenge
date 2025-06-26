@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 import os
 import logging
 from dotenv import load_dotenv
@@ -47,14 +49,48 @@ logger.info("⚙️ Registrando rutas de admin...")
 app.include_router(admin.router, prefix="/api")
 logger.info("✅ Todas las rutas registradas correctamente")
 
-# Ruta principal
-@app.get("/")
-async def root():
-    return {
-        "message": "Gemelo Digital API",
-        "status": "online",
-        "version": "1.0.0",
-    }
+# Configurar archivos estáticos para el frontend (solo si existe el directorio)
+frontend_dist_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")
+if os.path.exists(frontend_dist_path):
+    app.mount("/static", StaticFiles(directory=frontend_dist_path), name="static")
+    logger.info(f"📁 Sirviendo archivos estáticos desde: {frontend_dist_path}")
+    
+    # Servir el frontend en la ruta raíz
+    @app.get("/")
+    async def serve_frontend():
+        index_path = os.path.join(frontend_dist_path, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        else:
+            return {
+                "message": "Gemelo Digital API",
+                "status": "online",
+                "version": "1.0.0",
+                "note": "Frontend no encontrado, solo API disponible"
+            }
+    
+    # Manejar rutas del frontend (SPA routing)
+    @app.get("/{path:path}")
+    async def serve_spa(path: str):
+        # Si es una ruta de API, dejar que FastAPI la maneje
+        if path.startswith("api/"):
+            return {"error": "API endpoint not found"}
+        
+        # Para todas las demás rutas, servir index.html (SPA routing)
+        index_path = os.path.join(frontend_dist_path, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        else:
+            return {"error": "Frontend not found"}
+else:
+    # Si no hay frontend, servir solo la API
+    @app.get("/")
+    async def root():
+        return {
+            "message": "Gemelo Digital API",
+            "status": "online",
+            "version": "1.0.0",
+        }
 
 # Ruta de health check
 @app.get("/health")
