@@ -212,7 +212,8 @@ class QdrantService:
             
             # Obtener estadísticas
             collection_info = self.client.get_collection(self.collection_name)
-            count = collection_info.vectors_count
+            # Use points_count which represents actual documents stored
+            count = getattr(collection_info, 'points_count', 0) or 0
             
             return {
                 "exists": True,
