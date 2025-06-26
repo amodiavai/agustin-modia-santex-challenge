@@ -258,7 +258,7 @@ export default {
       try {
         const historyData = await chatService.getHistory();
         
-        // Clear current messages except welcome message
+        // Clear current messages
         this.messages = [];
         
         // Convert history data to message format
@@ -273,6 +273,16 @@ export default {
           });
         });
         
+        // If no history, show welcome message
+        if (historyData.length === 0) {
+          setTimeout(() => {
+            this.messages.push({
+              role: 'assistant',
+              content: '¡Hola! Soy el gemelo digital de Agustín Modia. ¿En qué puedo ayudarte hoy?'
+            });
+          }, 500);
+        }
+        
         // Scroll to bottom after loading
         this.$nextTick(() => {
           this.scrollToBottom();
@@ -280,7 +290,14 @@ export default {
         
       } catch (error) {
         console.error('Error loading chat history:', error);
-        alert('Error al cargar el historial de chat');
+        // If error loading history, show welcome message
+        this.messages = [];
+        setTimeout(() => {
+          this.messages.push({
+            role: 'assistant',
+            content: '¡Hola! Soy el gemelo digital de Agustín Modia. ¿En qué puedo ayudarte hoy?'
+          });
+        }, 500);
       } finally {
         this.loading = false;
       }
@@ -313,13 +330,8 @@ export default {
     }
   },
   mounted() {
-    // Añadir mensaje de bienvenida al iniciar el componente
-    setTimeout(() => {
-      this.messages.push({
-        role: 'assistant',
-        content: '¡Hola! Soy el gemelo digital de Agustín Modia. ¿En qué puedo ayudarte hoy?'
-      });
-    }, 500);
+    // Load chat history automatically when component mounts
+    this.loadChatHistory();
   }
 }
 </script>
