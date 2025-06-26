@@ -22,6 +22,7 @@ class AgentState(TypedDict):
     sources: List[Dict[str, Any]]
     thought_process: str
     response: str
+    has_relevant_data: bool
 
 class GemeloAgent:
     def __init__(self):
@@ -102,74 +103,42 @@ class GemeloAgent:
         workflow = StateGraph(AgentState)
         
         # Definir nodos
-        workflow.add_node("classify_query", self._classify_query)
         workflow.add_node("search_knowledge", self._search_knowledge)
         workflow.add_node("generate_response", self._generate_response)
+        workflow.add_node("no_data_response", self._no_data_response)
         
-        # Definir flujo
-        workflow.add_edge(START, "classify_query")
+        # Definir flujo - SIEMPRE buscar en la base de conocimientos primero
+        workflow.add_edge(START, "search_knowledge")
         
-        # Basado en la clasificación, decidir si necesita búsqueda en RAG
+        # Basado en si se encontró información relevante, decidir qué respuesta dar
         workflow.add_conditional_edges(
-            "classify_query",
-            lambda state: "search_knowledge" if state["needs_rag"] else "generate_response"
+            "search_knowledge",
+            lambda state: "generate_response" if state.get("has_relevant_data", False) else "no_data_response"
         )
         
-        workflow.add_edge("search_knowledge", "generate_response")
         workflow.add_edge("generate_response", END)
+        workflow.add_edge("no_data_response", END)
         
         # Compilar el grafo
         return workflow.compile()
     
-    async def _classify_query(self, state: AgentState) -> AgentState:
+    async def _no_data_response(self, state: AgentState) -> AgentState:
         """
-        Clasifica la consulta para determinar si necesita RAG
+        Genera una respuesta cuando no hay datos suficientes en la base de conocimientos
         
         Args:
             state: Estado actual del agente
             
         Returns:
-            Estado actualizado
+            Estado actualizado con la respuesta estándar
         """
-        query = state["query"]
-        history = state.get("history", [])
+        response = "Hola, soy el gemelo de Agustín Modia. Estoy preparado y entrenado para responder solo con la información contenida en su base de conocimientos. Actualmente no tengo datos suficientes para responder esa consulta."
         
-        try:
-            # Construir prompt para clasificación
-            system_prompt = self.prompts.get("classify", "Determina si la consulta necesita información específica de los documentos.")
-            
-            messages = [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": f"Consulta: {query}\n\nDecide si esta consulta necesita acceder a información específica de los documentos. Responde solo con 'SI' o 'NO'."}
-            ]
-            
-            # Realizar llamada a la API
-            response = await self.async_client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=0.1,
-                max_tokens=10
-            )
-            
-            decision = response.choices[0].message.content.strip().upper()
-            needs_rag = decision == "SI"
-            
-            # Actualizar estado
-            thought = f"Clasificación de la consulta: '{query}'\nDecisión: {'Necesita RAG' if needs_rag else 'No necesita RAG'}"
-            
-            return {
-                **state,
-                "needs_rag": needs_rag,
-                "thought_process": thought
-            }
-            
-        except Exception as e:
-            logger.error(f"Error clasificando consulta: {str(e)}")
-            return {
-                **state,
-                "needs_rag": True,  # Por defecto, usar RAG si hay error
-                "thought_process": f"Error en clasificación: {str(e)}"
-            }
+        return {
+            **state,
+            "response": response,
+            "thought_process": state.get("thought_process", "") + "\n\nNo se encontró información relevante en la base de conocimientos."
+        }
     
     async def _search_knowledge(self, state: AgentState) -> AgentState:
         """
@@ -179,7 +148,7 @@ class GemeloAgent:
             state: Estado actual del agente
             
         Returns:
-            Estado actualizado
+            Estado actualizado con flag de relevancia
         """
         query = state["query"]
         thought_process = state.get("thought_process", "")
@@ -240,8 +209,19 @@ class GemeloAgent:
                     "is_cv": "resume" in result["metadata"].get("file_name", "").lower() or "cv" in result["metadata"].get("file_name", "").lower()
                 })
             
+            # Determinar si hay información relevante suficiente
+            # Ser muy permisivo: si hay cualquier resultado, intentar responder
+            has_relevant_data = False
+            if prioritized_results:
+                highest_score = max(result["score"] for result in prioritized_results)
+                
+                # Si hay al menos un resultado con score > 0.2, considerar que hay información relevante
+                if highest_score > 0.2:
+                    has_relevant_data = True
+            
             # Actualizar el proceso de pensamiento con información detallada
             new_thought = thought_process + f"\n\nBúsqueda RAG: Encontrados {len(search_results)} documentos relevantes."
+            new_thought += f"\nRelevancia suficiente: {'Sí' if has_relevant_data else 'No'}"
             
             # Agregar información de los resúmenes de documentos si están disponibles
             if sources:
@@ -267,6 +247,7 @@ class GemeloAgent:
                 **state,
                 "context": context,
                 "sources": sources,
+                "has_relevant_data": has_relevant_data,
                 "thought_process": new_thought
             }
             
@@ -276,6 +257,7 @@ class GemeloAgent:
                 **state,
                 "context": [],
                 "sources": [],
+                "has_relevant_data": False,
                 "thought_process": thought_process + f"\n\nError en búsqueda RAG: {str(e)}"
             }
     
@@ -375,7 +357,8 @@ class GemeloAgent:
             "context": [],
             "sources": [],
             "thought_process": "Iniciando procesamiento de consulta",
-            "response": ""
+            "response": "",
+            "has_relevant_data": False
         }
         
         # Ejecutar el workflow del agente
@@ -402,7 +385,7 @@ class GemeloAgent:
         history: List[Dict[str, str]] = None
     ) -> AsyncGenerator[str, None]:
         """
-        Procesa un mensaje con respuesta en streaming
+        Procesa un mensaje con respuesta en streaming usando RAG obligatorio
         
         Args:
             message: Mensaje del usuario
@@ -414,29 +397,30 @@ class GemeloAgent:
         if history is None:
             history = []
             
-        # Primero clasificar la consulta y obtener contexto si es necesario
+        # Estado inicial - SIEMPRE buscar en la base de conocimientos
         initial_state = {
             "messages": [],
             "query": message,
             "history": history,
-            "needs_rag": False,
+            "needs_rag": True,  # Siempre necesita RAG
             "context": [],
             "sources": [],
             "thought_process": "Iniciando procesamiento de consulta",
-            "response": ""
+            "response": "",
+            "has_relevant_data": False
         }
         
         try:
-            # Ejecutar clasificación
-            state_after_classify = await self._classify_query(initial_state)
-            
-            # Si necesita RAG, buscar contexto
-            if state_after_classify["needs_rag"]:
-                state_with_context = await self._search_knowledge(state_after_classify)
-            else:
-                state_with_context = state_after_classify
+            # SIEMPRE buscar contexto en la base de conocimientos
+            state_with_context = await self._search_knowledge(initial_state)
                 
-            # Preparar prompt para streaming
+            # Si no hay datos relevantes, devolver mensaje estándar
+            if not state_with_context.get("has_relevant_data", False):
+                fallback_message = "Hola, soy el gemelo de Agustín Modia. Estoy preparado y entrenado para responder solo con la información contenida en su base de conocimientos. Actualmente no tengo datos suficientes para responder esa consulta."
+                yield fallback_message
+                return
+                
+            # Si hay datos relevantes, preparar prompt para streaming
             system_prompt = self.prompts.get("system", "Eres el gemelo digital de Agustín Modia.")
             
             # Construir mensajes
@@ -446,20 +430,17 @@ class GemeloAgent:
             for msg in history[-5:]:
                 messages.append({"role": msg["role"], "content": msg["content"]})
             
-            # Si hay contexto, agregarlo
-            if state_with_context.get("context"):
-                context_text = "\n\n".join(state_with_context["context"])
-                messages.append({
-                    "role": "user", 
-                    "content": (
-                        f"Por favor, responde la siguiente pregunta utilizando el contexto proporcionado. "
-                        f"Responde como si fueras Agustín Modia, en primera persona.\n\n"
-                        f"CONTEXTO:\n{context_text}\n\n"
-                        f"PREGUNTA: {message}"
-                    )
-                })
-            else:
-                messages.append({"role": "user", "content": message})
+            # Agregar contexto (siempre hay contexto si llegamos aquí)
+            context_text = "\n\n".join(state_with_context["context"])
+            messages.append({
+                "role": "user", 
+                "content": (
+                    f"Por favor, responde la siguiente pregunta utilizando el contexto proporcionado. "
+                    f"Responde como si fueras Agustín Modia, en primera persona.\n\n"
+                    f"CONTEXTO:\n{context_text}\n\n"
+                    f"PREGUNTA: {message}"
+                )
+            })
             
             # Generar streaming con la API
             stream = await self.async_client.chat.completions.create(
