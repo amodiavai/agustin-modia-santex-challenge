@@ -167,10 +167,12 @@ export default {
         });
         
         // Configurar la solicitud de streaming
+        const token = localStorage.getItem('token');
         const response = await fetch('/api/chat/stream', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
           body: JSON.stringify({
             message,

@@ -77,7 +77,10 @@ async def send_message(
 @router.post("/stream")
 async def stream_message(
     request: ChatRequest,
-    chat_service: ChatService = Depends(get_chat_service)
+    current_user: str = Depends(get_current_user),
+    chat_service: ChatService = Depends(get_chat_service),
+    chat_history_service: ChatHistoryService = Depends(get_chat_history_service),
+    db: Session = Depends(get_db)
 ):
     """
     Envía un mensaje al gemelo digital y obtiene una respuesta en streaming.
@@ -86,13 +89,30 @@ async def stream_message(
         # Convertir historial a formato esperado
         history = [{"role": msg.role, "content": msg.content} for msg in request.history]
         
+        # Variable para recopilar la respuesta completa
+        full_response = ""
+        
         # Crear función generadora para streaming
         async def response_generator():
+            nonlocal full_response
             async for chunk in chat_service.get_streaming_response(request.message, history):
                 # Convertir el chunk a formato de evento SSE
                 if chunk["finished"]:
+                    # Guardar la conversación completa en la base de datos
+                    try:
+                        chat_history_service.save_chat_message(
+                            db=db,
+                            user_message=request.message,
+                            assistant_response=full_response,
+                            session_id=current_user
+                        )
+                    except Exception as save_error:
+                        logger.error(f"Error guardando en historial: {str(save_error)}")
+                    
                     yield f"data: [DONE]\n\n"
                 else:
+                    # Acumular la respuesta completa
+                    full_response += chunk['chunk']
                     yield f"data: {chunk['chunk']}\n\n"
         
         # Devolver streaming response
