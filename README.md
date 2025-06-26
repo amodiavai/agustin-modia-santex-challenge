@@ -145,7 +145,7 @@ Los prompts del sistema se encuentran en archivos individuales en `backend/app/p
 1. Abre http://localhost:3000 en tu navegador
 2. Ingresa las credenciales de acceso:
    - Usuario: `admin-gd`
-   - Contraseña: `yQ7EpwW5sdjPHut`
+   - Contraseña: `Pasada por mail en la entrega del desafio`
 3. Accede al gemelo digital
 
 ### Chat Conversacional

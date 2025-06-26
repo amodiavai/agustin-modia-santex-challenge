@@ -25,11 +25,11 @@ class AuthService:
             
         self.SECRET_KEY = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
         self.ALGORITHM = "HS256"
-        self.ACCESS_TOKEN_EXPIRE_MINUTES = 30
+        self.ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
         
-        # Hardcoded credentials as requested
-        self.ADMIN_USER = "admin-gd"
-        self.ADMIN_PASSWORD = "yQ7EpwW5sdjPHut"
+        # Credentials from environment variables
+        self.ADMIN_USER = os.getenv("ADMIN_USER", "admin-gd")
+        self.ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "change-in-production")
 
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         if self.pwd_context:
