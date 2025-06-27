@@ -46,6 +46,7 @@ services:
     volumes:
       - ./backend:/app
       - uploads_data:/app/uploads
+      - static_data:/app/static
     ports:
       - "8000:8000"
     environment:
@@ -96,6 +97,8 @@ volumes:
   qdrant_data:
     driver: local
   uploads_data:
+    driver: local
+  static_data:
     driver: local
 
 # Red compartida por los servicios

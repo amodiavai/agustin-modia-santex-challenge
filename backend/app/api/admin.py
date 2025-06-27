@@ -1,9 +1,13 @@
 from fastapi import APIRouter, HTTPException, Depends, Response
 from fastapi.responses import FileResponse, JSONResponse
-from logging import getLogger
+import logging
 from typing import List, Dict, Any
 import os
+import time
 from pathlib import Path
+
+# Configurar logger
+logger = logging.getLogger(__name__)
 
 from app.services.qdrant_service import QdrantService
 from app.agents.gemelo_agent import GemeloAgent
@@ -103,18 +107,41 @@ async def get_langgraph_svg():
         Archivo SVG para visualizar el flujo del agente
     """
     try:
-        # Crear instancia del agente
-        agent = GemeloAgent()
-        
-        # Exportar el grafo a SVG
+        # Definir nombre de archivo y rutas
         filename = "langgraph_workflow.svg"
-        svg_path = agent.export_workflow_svg(filename)
+        static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static")
+        svg_path = os.path.join(static_dir, filename)
         
-        # Verificar si el archivo existe
+        # Crear directorio estático si no existe
+        os.makedirs(static_dir, exist_ok=True)
+        
+        # Verificar si el archivo ya existe y no es demasiado antiguo (< 1 hora)
+        cache_valid = False
+        if os.path.exists(svg_path):
+            file_age = time.time() - os.path.getmtime(svg_path)
+            if file_age < 3600:  # 1 hora en segundos
+                cache_valid = True
+                logger.info(f"Usando archivo SVG cacheado: {svg_path}")
+        
+        # Si no existe o es muy antiguo, regenerarlo
+        if not cache_valid:
+            # Generar nuevo SVG con el agente
+            try:
+                agent = GemeloAgent()
+                svg_path = agent.export_workflow_svg(filename)
+                logger.info(f"Generado nuevo archivo SVG: {svg_path}")
+            except Exception as e:
+                # Si falla la generación pero existe un archivo anterior, usar ese
+                if os.path.exists(svg_path):
+                    logger.warning(f"Error generando SVG, usando versión cacheada: {str(e)}")
+                else:
+                    raise
+        
+        # Verificar que el archivo existe antes de devolverlo
         if not os.path.exists(svg_path):
             return JSONResponse(
-                status_code=500,
-                content={"error": f"No se pudo generar el archivo SVG: {svg_path}"})
+                status_code=500, 
+                content={"error": "No se pudo generar o encontrar el archivo SVG"})
         
         # Devolver el archivo como respuesta
         return FileResponse(
@@ -124,6 +151,7 @@ async def get_langgraph_svg():
         )
         
     except Exception as e:
+        logger.error(f"Error en endpoint langgraph-svg: {str(e)}")
         return JSONResponse(
             status_code=500,
             content={"error": f"Error generando grafo LangGraph: {str(e)}"})
