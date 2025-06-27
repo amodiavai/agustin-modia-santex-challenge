@@ -642,7 +642,7 @@ api.interceptors.response.use(
 ```bash
 # Usuario administrador (configurable vía ENV)
 ADMIN_USER=admin-gd
-ADMIN_PASSWORD=yQ7EpwW5sdjPHut
+ADMIN_PASSWORD=Pasado_por_mail
 ```
 
 ---
@@ -874,8 +874,8 @@ POSTGRES_PASSWORD=admin123                    # Contraseña (CAMBIAR EN PRODUCCI
 # CONFIGURACIÓN AUTENTICACIÓN
 # ==============================================
 ADMIN_USER=admin-gd                           # Usuario administrador
-ADMIN_PASSWORD=yQ7EpwW5sdjPHut               # Contraseña admin (CAMBIAR)
-SECRET_KEY=8f42a73d56a1de3092b85e741d819...   # Clave JWT (GENERAR NUEVA)
+ADMIN_PASSWORD=Pasado_por_mail                # Contraseña admin 
+SECRET_KEY=8f42b85e741d819...                 # Clave JWT
 ACCESS_TOKEN_EXPIRE_MINUTES=30                # Expiración token (minutos)
 
 # ==============================================
