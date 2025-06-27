@@ -44,7 +44,7 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                 <path d="M6 0a.5.5 0 0 1 .5.5V3h3V.5a.5.5 0 0 1 1 0V3h1a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-1v3h1a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5h-1v2.5a.5.5 0 0 1-1 0V13h-3v2.5a.5.5 0 0 1-1 0V13H4a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5h1V6H4a.5.5 0 0 1-.5-.5v-3A.5.5 0 0 1 4 2h1V.5A.5.5 0 0 1 6 0zM4 3v2h1.5a.5.5 0 0 1 .5.5v3a.5.5 0 0 1-.5.5H4v2h1.5a.5.5 0 0 1 .5.5v2H9v-2a.5.5 0 0 1 .5-.5H11V9H9.5a.5.5 0 0 1-.5-.5V6a.5.5 0 0 1 .5-.5H11V3H9.5a.5.5 0 0 1-.5-.5V1H6v1.5a.5.5 0 0 1-.5.5H4z"/>
               </svg>
-              <span>Grafo</span>
+             
             </button>
             <button class="nav-button logout-button" @click="handleLogout">
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
