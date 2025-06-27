@@ -23,6 +23,7 @@ class AgentState(TypedDict):
     thought_process: str
     response: str
     has_relevant_data: bool
+    token_usage: Dict[str, int]  # Conteo de tokens
 
 class GemeloAgent:
     def __init__(self):
@@ -98,10 +99,6 @@ class GemeloAgent:
             Ruta del archivo SVG generado
         """
         try:
-            # Para la visualización, necesitamos recrear el grafo sin compilarlo
-            # ya que el objeto CompiledStateGraph no tiene el método draw()
-            visualization_graph = self._create_visualization_graph()
-                
             # Crear directorio temporal si no existe
             output_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "static")
             os.makedirs(output_dir, exist_ok=True)
@@ -109,14 +106,7 @@ class GemeloAgent:
             # Ruta completa del archivo
             output_path = os.path.join(output_dir, filename)
             
-            # Generar el SVG usando get_graph
-            from langgraph.graph.graph import CompiledGraph
-            
-            # Compilar temporalmente para obtener el grafo
-            compiled_graph = visualization_graph.compile()
-            
-            # Usar get_graph().draw_mermaid_png() o crear manualmente el SVG
-            # Como alternativa, creamos un SVG simple manualmente
+            # Crear SVG manual del workflow
             svg_content = self._create_manual_svg()
             
             # Escribir el SVG
@@ -282,6 +272,7 @@ class GemeloAgent:
         return {
             **state,
             "response": response,
+            "token_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
             "thought_process": state.get("thought_process", "") + "\n\nNo se encontró información relevante en la base de conocimientos."
         }
     
@@ -456,15 +447,23 @@ class GemeloAgent:
                 max_tokens=1024
             )
             
-            # Extraer respuesta
+            # Extraer respuesta y conteo de tokens
             response_text = response.choices[0].message.content.strip()
+            
+            # Obtener información de uso de tokens
+            token_usage = {
+                "prompt_tokens": response.usage.prompt_tokens,
+                "completion_tokens": response.usage.completion_tokens,
+                "total_tokens": response.usage.total_tokens
+            }
             
             # Actualizar estado
             return {
                 **state,
                 "response": response_text,
                 "messages": messages,
-                "thought_process": thought_process + f"\n\nRespuesta generada ({len(response_text)} caracteres)"
+                "token_usage": token_usage,
+                "thought_process": thought_process + f"\n\nRespuesta generada ({len(response_text)} caracteres) - Tokens: {token_usage['total_tokens']}"
             }
             
         except Exception as e:
@@ -472,6 +471,7 @@ class GemeloAgent:
             return {
                 **state,
                 "response": "Lo siento, ocurrió un error al procesar tu mensaje.",
+                "token_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
                 "thought_process": thought_process + f"\n\nError generando respuesta: {str(e)}"
             }
     
@@ -503,7 +503,8 @@ class GemeloAgent:
             "sources": [],
             "thought_process": "Iniciando procesamiento de consulta",
             "response": "",
-            "has_relevant_data": False
+            "has_relevant_data": False,
+            "token_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         }
         
         # Ejecutar el workflow del agente
@@ -514,14 +515,16 @@ class GemeloAgent:
             return {
                 "response": final_state["response"],
                 "sources": final_state.get("sources", []),
-                "thought_process": final_state.get("thought_process", "")
+                "thought_process": final_state.get("thought_process", ""),
+                "token_usage": final_state.get("token_usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
             }
         except Exception as e:
             logger.error(f"Error en ejecución del workflow: {str(e)}")
             return {
                 "response": "Lo siento, ocurrió un error al procesar tu mensaje.",
                 "sources": [],
-                "thought_process": f"Error: {str(e)}"
+                "thought_process": f"Error: {str(e)}",
+                "token_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
             }
     
     async def process_message_streaming(
@@ -552,7 +555,8 @@ class GemeloAgent:
             "sources": [],
             "thought_process": "Iniciando procesamiento de consulta",
             "response": "",
-            "has_relevant_data": False
+            "has_relevant_data": False,
+            "token_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
         }
         
         try:

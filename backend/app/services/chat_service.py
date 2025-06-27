@@ -53,13 +53,15 @@ class ChatService:
             return {
                 "response": response["response"],
                 "sources": response.get("sources", []),
-                "thought_process": response.get("thought_process", "")
+                "thought_process": response.get("thought_process", ""),
+                "token_usage": response.get("token_usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
             }
         
         except Exception as e:
             logger.error(f"Error obteniendo respuesta: {str(e)}")
             return {
                 "response": "Lo siento, ocurrió un error al procesar tu mensaje.",
+                "token_usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0},
                 "error": str(e)
             }
             

@@ -29,6 +29,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
     sources: List[Dict[str, Any]] = []
+    token_usage: Dict[str, int] = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
 # Función para obtener servicios
 async def get_chat_service():
@@ -65,7 +66,8 @@ async def send_message(
         
         return {
             "response": response["response"],
-            "sources": response.get("sources", [])
+            "sources": response.get("sources", []),
+            "token_usage": response.get("token_usage", {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0})
         }
     except Exception as e:
         logger.error(f"Error en /chat/send: {str(e)}")
