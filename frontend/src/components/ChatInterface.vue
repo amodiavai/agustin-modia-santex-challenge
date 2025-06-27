@@ -82,6 +82,25 @@
         </li>
       </ul>
     </div>
+    
+    <!-- Uso de tokens (si hay) -->
+    <div v-if="tokenUsage && tokenUsage.total_tokens > 0" class="token-usage mt-4">
+      <h4 class="mb-2">Uso de Tokens OpenAI:</h4>
+      <div class="token-stats">
+        <div class="token-stat">
+          <span class="token-label">Prompt:</span>
+          <span class="token-value">{{ tokenUsage.prompt_tokens }}</span>
+        </div>
+        <div class="token-stat">
+          <span class="token-label">Respuesta:</span>
+          <span class="token-value">{{ tokenUsage.completion_tokens }}</span>
+        </div>
+        <div class="token-stat token-total">
+          <span class="token-label">Total:</span>
+          <span class="token-value">{{ tokenUsage.total_tokens }}</span>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -98,6 +117,7 @@ export default {
       messages: [],
       isTyping: false,
       sources: [],
+      tokenUsage: null,
       streamController: null,
       loading: false
     };
@@ -117,6 +137,7 @@ export default {
       // Indicar que el gemelo está escribiendo
       this.isTyping = true;
       this.sources = [];
+      this.tokenUsage = null;
       
       // Scroll al final de los mensajes
       this.$nextTick(() => {
@@ -227,14 +248,29 @@ export default {
     
     async fetchSources(message, history) {
       try {
-        // Hacer una petición normal para obtener las fuentes
+        console.log('Obteniendo fuentes y tokens...');
+        const token = localStorage.getItem('token');
+        
+        // Hacer una petición normal para obtener las fuentes y tokens
         const response = await axios.post('/api/chat/send', {
           message,
           history
+        }, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         });
+        
+        console.log('Respuesta de fuentes:', response.data);
         
         if (response.data && response.data.sources) {
           this.sources = response.data.sources;
+          console.log('Fuentes actualizadas:', this.sources);
+        }
+        
+        if (response.data && response.data.token_usage) {
+          this.tokenUsage = response.data.token_usage;
+          console.log('Tokens actualizados:', this.tokenUsage);
         }
       } catch (error) {
         console.error('Error obteniendo fuentes:', error);
@@ -312,6 +348,8 @@ export default {
       try {
         await chatService.clearHistory();
         this.messages = [];
+        this.sources = [];
+        this.tokenUsage = null;
         
         // Add welcome message after clearing
         setTimeout(() => {
@@ -421,6 +459,58 @@ export default {
   border-color: #ff6b6b;
 }
 
+/* Token usage styles */
+.token-usage {
+  background-color: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.token-usage h4 {
+  color: var(--color-primary);
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.token-stats {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.token-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem;
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: 6px;
+  min-width: 80px;
+}
+
+.token-stat.token-total {
+  background-color: rgba(0, 191, 191, 0.1);
+  border: 1px solid rgba(0, 191, 191, 0.3);
+}
+
+.token-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 0.25rem;
+}
+
+.token-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.token-total .token-value {
+  color: var(--color-secondary);
+}
+
 @media (max-width: 768px) {
   .chat-header {
     flex-direction: column;
@@ -434,6 +524,14 @@ export default {
   .chat-control-btn {
     flex: 1;
     justify-content: center;
+  }
+  
+  .token-stats {
+    gap: 0.5rem;
+  }
+  
+  .token-stat {
+    min-width: 70px;
   }
 }
 </style>
